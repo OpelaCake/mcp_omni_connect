@@ -55,7 +55,6 @@ class InMemoryShortTermMemory:
                 messages = self.multi_agent_history[agent_name]
             else:
                 messages = self.single_agent_history
-
             # Calculate total tokens
             total_tokens = sum(
                 len(str(msg["content"]).split()) for msg in messages
@@ -304,7 +303,7 @@ class RedisShortTermMemory:
             "metadata": self._serialize(metadata),
             "timestamp": timestamp,
         }
-
+        # print(f"message: {message}")
         # Store as a JSON string in Redis
         await self._redis_client.zadd(key, {json.dumps(message): timestamp})
         await self._redis_client.set(

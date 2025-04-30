@@ -26,6 +26,7 @@ from mcpomni_connect.refresh_server_capabilities import refresh_capabilities
 from mcpomni_connect.resources import (
     list_resources,
     read_resource,
+    load_picture_resource,
     subscribe_resource,
     unsubscribe_resource,
 )
@@ -47,6 +48,7 @@ from mcpomni_connect.memory import (
 # from mcpomni_connect.memory import EpisodicMemory
 from mcpomni_connect.mcp_omni_agents import OrchestratorAgent
 from mcpomni_connect.constants import AGENTS_REGISTRY
+import os
 
 
 class CommandType(Enum):
@@ -59,6 +61,7 @@ class CommandType(Enum):
     TOOLS = "tools"
     RESOURCES = "resources"
     RESOURCE = "resource"
+    LOAD_PICTURE = "load_picture"
     SUBSCRIBE = "subscribe"
     UNSUBSCRIBE = "unsubscribe"
     PROMPTS = "prompts"
@@ -166,6 +169,15 @@ class CommandHelp:
                     "URIs can be files, URLs, or other resource identifiers",
                     "Resources are automatically parsed based on type",
                     "Content is formatted for easy reading",
+                ],
+            },            
+            "load_picture": {
+                "description": "Load a picture resource to message history",
+                "usage": "/load_picture:<uri>",
+                "examples": ["/load_picture:file:///path/to/file", "/load_picture:http://api.example.com/data"],
+                "subcommands": {},
+                "tips": [
+                    "Load a picture resource to message history",
                 ],
             },
             "debug": {
@@ -300,6 +312,8 @@ class MCPClientCLI:
             return CommandType.TOOLS, ""
         elif input_text == "/resources":
             return CommandType.RESOURCES, ""
+        elif input_text.startswith("/load_picture"):
+            return CommandType.LOAD_PICTURE, input_text[14:].strip()
         elif input_text == "/prompts":
             return CommandType.PROMPTS, ""
         elif input_text.startswith("/resource:"):
@@ -553,6 +567,69 @@ class MCPClientCLI:
             self.console.print(Markdown(content))
         else:
             self.console.print(Panel(content, title=uri, border_style="blue"))
+
+    async def handle_load_picture_command(self, uri: str, save_path: str = None):
+        """Handle picture loading command
+        
+        Args:
+            uri: The URI of the picture (local file path or URL)
+            save_path: Optional path to save the loaded image data URL to a file
+        """
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            transient=True,
+        ) as progress:
+            progress.add_task("Loading picture...", total=None)
+            
+            data_url, mime_type = await load_picture_resource(
+                uri=uri,
+                sessions=self.client.sessions,
+                available_resources=self.client.available_resources,
+                add_message_to_history=(
+                    self.redis_short_term_memory.store_message
+                    if self.USE_MEMORY["redis"]
+                    else self.in_memory_short_term_memory.store_message
+                ),
+                llm_call=self.llm_connection.llm_call,
+                debug=self.client.debug,
+            )
+
+        if data_url and mime_type:
+            # Create a summary message
+            summary = f"Successfully loaded image:\n" \
+                     f"- Type: {mime_type}\n" \
+                     f"- Source: {uri}"
+            
+            # If save_path is provided, save the data URL to a file
+            if save_path:
+                try:
+                    # Ensure the directory exists
+                    os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
+                    
+                    with open(save_path, "w", encoding="utf-8") as f:
+                        f.write(data_url)
+                    summary += f"\n- Saved to: {save_path}"
+                except Exception as e:
+                    self.console.print(f"[red]Error saving image data URL: {e}[/red]")
+            
+            # Display success message in a panel
+            self.console.print(Panel(
+                summary,
+                title="Image Loaded",
+                border_style="green"
+            ))
+            
+            # Return the data URL for potential further use
+            return data_url
+        else:
+            # Display error message in a panel
+            self.console.print(Panel(
+                f"Failed to load image from: {uri}",
+                title="Error",
+                border_style="red"
+            ))
+            return None
 
     async def handle_subscribe(self, input_text: str):
         """Handle subscribe command"""
@@ -961,6 +1038,7 @@ class MCPClientCLI:
             CommandType.TOOLS: self.handle_tools_command,
             CommandType.RESOURCES: self.handle_resources_command,
             CommandType.RESOURCE: self.handle_resource_command,
+            CommandType.LOAD_PICTURE: self.handle_load_picture_command,
             CommandType.QUERY: self.handle_query,
             CommandType.PROMPTS: self.handle_prompts_command,
             CommandType.PROMPT: self.handle_prompt_command,
@@ -979,7 +1057,7 @@ class MCPClientCLI:
                 query = Prompt.ask("\n[bold blue]Query[/]").strip()
                 # get the command type and payload from the query
                 command_type, payload = self.parse_command(query)
-
+                print(f"command_type: {command_type}, payload: {payload}")
                 if command_type == CommandType.QUIT:
                     # TODO: handle the episodic memory command
                     # await self.handle_episodic_memory_command()
@@ -1096,6 +1174,11 @@ class MCPClientCLI:
                 "/resource:<uri>",
                 "Read a specific resource 🔍",
                 "/resource:file:///path/to/file",
+            ),
+            (
+                "/load_picture:<uri>",
+                "Load a picture resource 🔍",
+                "/load_picture:file:///path/to/file",
             ),
             (
                 "/subscribe:/<type>:<uri>",

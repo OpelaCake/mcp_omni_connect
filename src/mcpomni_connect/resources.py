@@ -1,6 +1,11 @@
-from typing import Any, Callable
+from typing import Any, Callable, Optional, Tuple
 import asyncio
 from mcpomni_connect.utils import logger
+import base64
+import mimetypes
+import os
+import aiohttp
+import aiofiles
 
 
 # handle subscribe to resource change
@@ -131,3 +136,87 @@ async def read_resource(
             "user", error_message, {"resource_uri": uri, "error": True}
         )
         return error_message
+
+
+async def load_picture_resource(
+    uri: str,
+    sessions: dict[str, dict[str, Any]],
+    available_resources: dict[str, list[str]],
+    add_message_to_history: Callable[[str, str], dict[str, Any]],
+    llm_call: Callable[[list[dict[str, Any]]], dict[str, Any]],
+    debug: bool = False,
+) -> Tuple[Optional[str], Optional[str]]:
+    """Load a picture resource and return its base64 encoding and mime type.
+    
+    Args:
+        uri: The URI of the picture resource (local file path or URL)
+        sessions: Dictionary of MCP sessions
+        available_resources: Dictionary of available resources
+        add_message_to_history: Function to add messages to history
+        llm_call: Function to call LLM
+        debug: Enable debug logging
+        
+    Returns:
+        Tuple[Optional[str], Optional[str]]: (base64_encoded_image, mime_type) or (None, None) on error
+    """
+    try:
+        if debug:
+            logger.info(f"Loading picture resource: {uri}")
+        
+        # Add message to history
+        await add_message_to_history("user", f"Loading picture resource: {uri}")
+        
+        # Check if it's a URL
+        if uri.startswith(("http://", "https://")):
+            async with aiohttp.ClientSession() as session:
+                async with session.get(uri) as response:
+                    if response.status != 200:
+                        raise Exception(f"Failed to fetch image from URL: {response.status}")
+                    image_data = await response.read()
+                    mime_type = response.headers.get("content-type", "image/jpeg")
+        else:
+            # Handle local file
+            if not os.path.exists(uri):
+                # Try to find the resource in MCP servers
+                server_name, found = await find_resource_server(uri, available_resources)
+                if found:
+                    resource_response = await sessions[server_name]["session"].read_resource(uri)
+                    image_data = resource_response.encode() if isinstance(resource_response, str) else resource_response
+                else:
+                    raise FileNotFoundError(f"Image file not found: {uri}")
+            else:
+                # Read local file
+                async with aiofiles.open(uri, "rb") as f:
+                    image_data = await f.read()
+            
+            # Determine mime type
+            mime_type = mimetypes.guess_type(uri)[0] or "image/jpeg"
+        
+        # Encode to base64
+        base64_image = base64.b64encode(image_data).decode("utf-8")
+        
+        # Create data URL format
+        data_url = f"data:{mime_type};base64,{base64_image}"
+        
+        if debug:
+            logger.info(f"Successfully loaded image: {uri} ({mime_type})")
+        
+        # Add success message to history
+        await add_message_to_history(
+            "user", 
+            f"Successfully loaded image ({mime_type})",
+            {"resource_uri": uri, "mime_type": mime_type, "image_url": data_url}
+        )
+        
+        return data_url, mime_type
+        
+    except Exception as e:
+        error_message = f"Error loading picture resource: {e}"
+        logger.error(error_message)
+        # Add error message to history
+        await add_message_to_history(
+            "system",
+            error_message,
+            {"resource_uri": uri, "error": True}
+        )
+        return None, None

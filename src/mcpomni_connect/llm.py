@@ -5,6 +5,9 @@ from openai import OpenAI
 from mcpomni_connect.utils import logger
 
 
+from openai.types.chat.chat_completion_content_part_param import ChatCompletionContentPartImageParam
+from openai.types.chat.chat_completion_user_message_param import ChatCompletionUserMessageParam
+from openai.types.chat.chat_completion_content_part_image_param import ImageURL
 class LLMConnection:
     def __init__(self, config: dict[str, Any]):
         self.config = config
@@ -54,8 +57,81 @@ class LLMConnection:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] = None,
     ):
-        """Call the LLM"""
+        """Call the LLM with support for multimodal inputs (text and images)"""
         try:
+            # Process messages to handle image content
+            processed_messages = []
+            
+            for msg in messages:
+                # 检查当前消息是否包含图片
+                if "metadata" in msg and "image_url" in msg["metadata"]:
+                    # Handle image content based on different providers
+                    if self.llm_config["provider"].lower() == "openai":
+                        # 检查是否是base64数据URL
+                        image_url = msg["metadata"]["image_url"]
+                        if image_url.startswith("data:image"):
+                            processed_messages.append({
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": msg.get("content", "")
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": image_url,
+                                            "detail": "auto"
+                                        }
+                                    }
+                                ]
+                            })
+                        else:
+                            # 处理普通URL
+                            processed_messages.append({
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": msg.get("content", "")
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": image_url,
+                                            "detail": "auto"
+                                        }
+                                    }
+                                ]
+                            })
+                    elif self.llm_config["provider"].lower() == "gemini":
+                        processed_messages.append({
+                            "role": "user",
+                            "parts": [
+                                {"text": msg.get("content", "")},
+                                {"inline_data": {
+                                    "mime_type": "image/jpeg",
+                                    "data": msg["metadata"]["image_url"]
+                                }}
+                            ]
+                        })
+                    else:
+                        # For providers that don't support images, include only text
+                        processed_messages.append({
+                            "role": "user",
+                            "content": f"{msg.get('content', '')} [Image content not supported]"
+                        })
+                else:
+                    # 普通文本消息
+                    processed_messages.append({
+                        "role": "user",
+                        "content": msg.get("content", "")
+                    })
+
+            # 打印处理后的消息用于调试
+            for msg in processed_messages:
+                print(f"Processed message: {msg}")
+
             if self.llm_config["provider"].lower() == "openai":
                 if tools:
                     response = self.openai.chat.completions.create(
@@ -63,7 +139,7 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                         tools=tools,
                         tool_choice="auto",
                     )
@@ -73,18 +149,18 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                     )
                 return response
             elif self.llm_config["provider"].lower() == "groq":
-                # messages = self.truncate_messages_for_groq(messages)
+                # Groq currently doesn't support image inputs
                 if tools:
                     response = self.groq.chat.completions.create(
                         model=self.llm_config["model"],
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                         tools=tools,
                         tool_choice="auto",
                     )
@@ -94,7 +170,7 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                     )
                 return response
             elif self.llm_config["provider"].lower() == "openrouter":
@@ -109,7 +185,7 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                         tools=tools,
                         tool_choice="auto",
                     )
@@ -124,7 +200,7 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                         stop=["\n\nObservation:"],
                     )
                 return response
@@ -135,7 +211,7 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                         tools=tools,
                         tool_choice="auto",
                     )
@@ -145,17 +221,18 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                     )
                 return response
             elif self.llm_config["provider"].lower() == "deepseek":
+                # DeepSeek currently doesn't support image inputs
                 if tools:
                     response = self.deepseek.chat.completions.create(
                         model=self.llm_config["model"],
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                         tools=tools,
                         tool_choice="auto",
                     )
@@ -165,7 +242,7 @@ class LLMConnection:
                         max_tokens=self.llm_config["max_tokens"],
                         temperature=self.llm_config["temperature"],
                         top_p=self.llm_config["top_p"],
-                        messages=messages,
+                        messages=processed_messages,
                     )
                 return response
         except Exception as e:

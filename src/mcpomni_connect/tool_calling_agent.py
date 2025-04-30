@@ -42,7 +42,7 @@ async def tool_calling_agent(
                 pending_tool_responses = []
 
             # then add user message to messages that will be sent to LLM
-            messages.append({"role": "user", "content": message["content"]})
+            messages.append({"role": "user", "content": message["content"], "metadata": message.get("metadata", {}) })
 
         elif message["role"] == "assistant":
             # check if the assistant with tool call
@@ -120,7 +120,7 @@ async def tool_calling_agent(
         }
         for tool in tools_list
     ]
-
+    
     if debug:
         tool_names = [tool["function"]["name"] for tool in all_available_tools]
         logger.info(f"Available tools for query: {tool_names}")
