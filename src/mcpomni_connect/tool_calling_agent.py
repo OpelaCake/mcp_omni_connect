@@ -1,6 +1,7 @@
 import json
 from typing import Any, Callable, Optional
 from mcpomni_connect.utils import logger
+from mcpomni_connect.tools import get_local_tools
 
 
 # process a query using LLM and available tools using tool calling agent
@@ -120,7 +121,6 @@ async def tool_calling_agent(
         }
         for tool in tools_list
     ]
-    
     if debug:
         tool_names = [tool["function"]["name"] for tool in all_available_tools]
         logger.info(f"Available tools for query: {tool_names}")
@@ -201,47 +201,60 @@ async def tool_calling_agent(
             # execute tool call on the server
             try:
                 tool_content = None
-                if debug:
-                    logger.info(
-                        f"Looking for tool {tool_name} in available tools"
-                    )
-
-                for server_name, tools in available_tools.items():
-                    # Get tool names, handling both Mock objects and regular tools
-                    tool_names = []
-                    for tool in tools:
-                        if hasattr(tool, "name"):
-                            if debug:
-                                logger.info(
-                                    f"Found tool with name attribute: {tool.name}"
-                                )
-                            tool_names.append(tool.name)
-                        elif isinstance(tool, str):
-                            if debug:
-                                logger.info(
-                                    f"Found tool with string name: {tool}"
-                                )
-                            tool_names.append(tool)
-
-                    if debug:
-                        logger.info(
-                            f"Available tool names in {server_name}: {tool_names}"
+                # Try local tools first
+                local_tools = get_local_tools()
+                
+                for tool in local_tools:
+                    if tool.name == tool_name:
+                        if debug:
+                            logger.info(f"Found matching local tool {tool_name}")
+                        from mcpomni_connect.localtools import LOCAL_TOOLS
+                        result = await LOCAL_TOOLS[tool_name](
+                            tool_args.get("url"),
+                            add_message_to_history=add_message_to_history,
+                            debug=debug
                         )
+                        tool_content = str(result)
+                        break
 
-                    if tool_name in tool_names:
+                # If no local tool found, try remote tools
+                if tool_content is None:
+                    for server_name, tools in available_tools.items():
+                        # Get tool names, handling both Mock objects and regular tools
+                        tool_names = []
+                        for tool in tools:
+                            if hasattr(tool, "name"):
+                                if debug:
+                                    logger.info(
+                                        f"Found tool with name attribute: {tool.name}"
+                                    )
+                                tool_names.append(tool.name)
+                            elif isinstance(tool, str):
+                                if debug:
+                                    logger.info(
+                                        f"Found tool with string name: {tool}"
+                                    )
+                                tool_names.append(tool)
+
                         if debug:
                             logger.info(
-                                f"Found matching tool {tool_name} in {server_name}"
+                                f"Available tool names in {server_name}: {tool_names}"
                             )
-                        result = await sessions[server_name][
-                            "session"
-                        ].call_tool(tool_name, tool_args)
-                        tool_content = (
-                            result.content
-                            if hasattr(result, "content")
-                            else str(result)
-                        )
-                        break
+
+                        if tool_name in tool_names:
+                            if debug:
+                                logger.info(
+                                    f"Found matching tool {tool_name} in {server_name}"
+                                )
+                            result = await sessions[server_name][
+                                "session"
+                            ].call_tool(tool_name, tool_args)
+                            tool_content = (
+                                result.content
+                                if hasattr(result, "content")
+                                else str(result)
+                            )
+                            break
 
                 if tool_content is None:
                     raise Exception(
@@ -255,8 +268,7 @@ async def tool_calling_agent(
                     and hasattr(tool_content[0], "text")
                 ):
                     tool_content = tool_content[0].text
-                else:
-                    tool_content = tool_content
+                
                 tool_results.append(
                     {"call": tool_name, "result": tool_content}
                 )
@@ -272,9 +284,7 @@ async def tool_calling_agent(
                 messages.append(
                     {
                         "role": "tool",
-                        "content": str(
-                            tool_content
-                        ),  # Ensure content is a string
+                        "content": str(tool_content),  # Ensure content is a string
                         "tool_call_id": tool_call.id,
                     }
                 )
@@ -288,6 +298,7 @@ async def tool_calling_agent(
                         "args": tool_args,
                     },
                 )
+                final_text.append(f"\n[Tool {tool_name} returned: {tool_content}]")
             except Exception as e:
                 error_message = f"Error executing tool call {tool_name}: {e}"
                 logger.error(error_message)

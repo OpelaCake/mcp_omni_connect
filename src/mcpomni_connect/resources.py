@@ -140,20 +140,15 @@ async def read_resource(
 
 async def load_picture_resource(
     uri: str,
-    sessions: dict[str, dict[str, Any]],
-    available_resources: dict[str, list[str]],
     add_message_to_history: Callable[[str, str], dict[str, Any]],
-    llm_call: Callable[[list[dict[str, Any]]], dict[str, Any]],
     debug: bool = False,
+    **kwargs
 ) -> Tuple[Optional[str], Optional[str]]:
     """Load a picture resource and return its base64 encoding and mime type.
     
     Args:
         uri: The URI of the picture resource (local file path or URL)
-        sessions: Dictionary of MCP sessions
-        available_resources: Dictionary of available resources
         add_message_to_history: Function to add messages to history
-        llm_call: Function to call LLM
         debug: Enable debug logging
         
     Returns:
@@ -177,13 +172,7 @@ async def load_picture_resource(
         else:
             # Handle local file
             if not os.path.exists(uri):
-                # Try to find the resource in MCP servers
-                server_name, found = await find_resource_server(uri, available_resources)
-                if found:
-                    resource_response = await sessions[server_name]["session"].read_resource(uri)
-                    image_data = resource_response.encode() if isinstance(resource_response, str) else resource_response
-                else:
-                    raise FileNotFoundError(f"Image file not found: {uri}")
+                raise Exception(f"File not found: {uri}")
             else:
                 # Read local file
                 async with aiofiles.open(uri, "rb") as f:

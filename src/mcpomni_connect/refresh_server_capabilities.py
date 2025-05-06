@@ -38,6 +38,7 @@ async def refresh_capabilities(
     server_name: str = None,
 ) -> None:
     """Refresh the capabilities of the server and update system prompt"""
+    AGENTS_REGISTRY["local"] = "You have some local tools that can be used to help you with the task."
     for server_name in server_names:
         if not sessions.get(server_name, {}).get("connected", False):
             raise ValueError(f"Not connected to server: {server_name}")

@@ -187,10 +187,6 @@ class ReActAgent:
             logger.error("Error parsing response: %s", str(e), exc_info=True)
             return {"error": str(e)}
 
-        logger.warning(
-            "No valid action or answer found in response: %s", response
-        )
-        return {"error": "No valid action or answer found in response"}
 
     async def _execute_tool(
         self,

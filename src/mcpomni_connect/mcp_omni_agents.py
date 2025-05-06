@@ -211,10 +211,6 @@ class McpServerAgent:
             logger.error("Error parsing response: %s", str(e))
             return {"error": str(e)}
 
-        logger.warning(
-            "No valid action or answer found in response: %s", response
-        )
-        return {"error": "No valid action or answer found in response"}
 
     async def _execute_tool(
         self,
@@ -971,11 +967,6 @@ class OrchestratorAgent:
             logger.error("Error parsing response: %s", str(e))
             return {"error": str(e)}
 
-        logger.warning(
-            "No valid action or answer found in response: %s", response
-        )
-        return {"error": "No valid action or answer found in response"}
-
     async def create_agent_system_prompt(
         self,
         agent_name: str,
@@ -1075,10 +1066,13 @@ class OrchestratorAgent:
                 "agent_description": self.agent_registry[server_name],
                 "capabilities": [],
             }
+            # print(f"available_tools: {available_tools}")
             for tool in tools:
+                print(f"tool: {tool}")
                 name = str(tool.name) if tool.name else "No Name available"
                 agent_entry["capabilities"].append(name)
             agent_registries.append(agent_entry)
+        print(f"return agent_registries: {agent_registries}")
         return "\n".join(
             [
                 "### Agent Registry",

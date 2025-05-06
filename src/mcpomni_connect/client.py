@@ -16,6 +16,7 @@ from mcpomni_connect.refresh_server_capabilities import refresh_capabilities
 from mcpomni_connect.notifications import handle_notifications
 from mcpomni_connect.llm import LLMConnection
 from mcpomni_connect.system_prompts import generate_react_agent_role_prompt
+from mcpomni_connect.tools import get_local_tools
 from mcpomni_connect.utils import logger
 from datetime import timedelta
 from mcpomni_connect.sampling import samplingCallback
@@ -67,6 +68,7 @@ class MCPClient:
         self.exit_stack = AsyncExitStack()
         self.llm_connection = LLMConnection(self.config)
         self.sampling_callback = samplingCallback()
+        self.available_tools["local"] = get_local_tools()
 
     async def connect_to_servers(self):
         """Connect to an MCP server"""
