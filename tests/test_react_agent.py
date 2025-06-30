@@ -243,7 +243,7 @@ class TestReActAgent:
             # Print all messages for debugging
             print("All messages:")
             for msg in agent.messages:
-                print(f"Message: {msg}")
+                print(f"Message: {str(msg)[:300]}")
 
             # Verify the timeout message is added correctly
             assert (

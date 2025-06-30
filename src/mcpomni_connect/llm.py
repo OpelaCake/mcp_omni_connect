@@ -124,13 +124,13 @@ class LLMConnection:
                 else:
                     # 普通文本消息
                     processed_messages.append({
-                        "role": "user",
+                        "role": msg["role"],
                         "content": msg.get("content", "")
                     })
 
             # 打印处理后的消息用于调试
             for msg in processed_messages:
-                print(f"Processed message: {msg}")
+                print(f"Processed message: {str(msg)[:300]}")
 
             if self.llm_config["provider"].lower() == "openai":
                 if tools:

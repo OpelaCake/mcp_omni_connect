@@ -1,4 +1,14 @@
+# Run
+
+1. 支持图片
+2. 
+
+
+
+# Following is official readme of MCPOmni
+
 # 🚀 MCPOmni Connect - Universal Gateway to MCP Servers
+
 [![PyPI Downloads](https://static.pepy.tech/badge/mcpomni-connect)](https://pepy.tech/projects/mcpomni-connect)
 [![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -13,6 +23,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
 ## ✨ Key Features
 
 ### 🔌 Universal Connectivity
+
 - **Multi-Protocol Support**
   - Native support for stdio transport
   - Server-Sent Events (SSE) for real-time communication
@@ -32,6 +43,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
   - Automated subtask management and execution
 
 ### 🧠 AI-Powered Intelligence
+
 - **Advanced LLM Integration**
   - Seamless OpenAI models integration
   - Seamless OpenRouter models integration
@@ -46,8 +58,8 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
     - Dynamic function execution based on user requests
     - Intelligent tool orchestration
 
-
 ### 🔒 Security & Privacy
+
 - **Explicit User Control**
   - All tool executions require explicit user approval in chat mode
   - Clear explanation of tool actions before execution
@@ -66,6 +78,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
   - Environment variable protection
 
 ### 💾 Memory Management
+
 - **Redis-Powered Persistence**
   - Long-term conversation memory storage
   - Session persistence across restarts
@@ -84,6 +97,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
   - Cross-session context maintenance
 
 ### 💬 Prompt Management
+
 - **Advanced Prompt Handling**
   - Dynamic prompt discovery across servers
   - Flexible argument parsing (JSON and key-value formats)
@@ -100,6 +114,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
   - Real-time sampling adjustments
 
 ### 🛠️ Tool Orchestration
+
 - **Dynamic Tool Discovery & Management**
   - Automatic tool capability detection
   - Cross-server tool coordination
@@ -107,6 +122,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
   - Real-time tool availability updates
 
 ### 📦 Resource Management
+
 - **Universal Resource Access**
   - Cross-server resource discovery
   - Unified resource addressing
@@ -114,6 +130,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
   - Smart content summarization
 
 ### 🔄 Server Management
+
 - **Advanced Server Handling**
   - Multiple simultaneous server connections
   - Automatic server health monitoring
@@ -123,6 +140,7 @@ MCPOmni Connect is a powerful, universal command-line interface (CLI) that serve
 ## 🏗️ Architecture
 
 ### Core Components
+
 ```
 MCPOmni Connect
 ├── Transport Layer
@@ -145,12 +163,14 @@ MCPOmni Connect
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Python 3.10+
 - LLM API key
 - UV package manager (recommended)
 - Redis server (optional, for persistent memory)
 
 ### Install using package manager
+
 ```bash
 # with uv recommended
 uv add mcpomni-connect
@@ -159,6 +179,7 @@ pip install mcpomni-connect
 ```
 
 ### Configuration
+
 ```bash
 # Set up environment variables
 echo "LLM_API_KEY=your_key_here" > .env
@@ -170,6 +191,7 @@ echo "REDIS_DB=0" >> .env"
 ```
 
 ### Start CLI
+
 ```bash
 # start the cli running the command ensure your api key is export or create .env
 mcpomni_connect
@@ -178,6 +200,7 @@ mcpomni_connect
 ## 🧪 Testing
 
 ### Running Tests
+
 ```bash
 # Run all tests with verbose output
 pytest tests/ -v
@@ -190,6 +213,7 @@ pytest tests/ --cov=src --cov-report=term-missing
 ```
 
 ### Test Structure
+
 ```
 tests/
 ├── unit/           # Unit tests for individual components
@@ -198,6 +222,7 @@ tests/
 ### Development Quick Start
 
 1. **Installation**
+
    ```bash
    # Clone the repository
    git clone https://github.com/Abiorh001/mcp_omni_connect.git
@@ -210,8 +235,8 @@ tests/
    # Install dependencies
    uv sync
    ```
-
 2. **Configuration**
+
    ```bash
    # Set up environment variables
    echo "LLM_API_KEY=your_key_here" > .env
@@ -219,6 +244,7 @@ tests/
    # Configure your servers in servers_config.json
    ```
 3. ** Start Client**
+
    ```bash
    # Start the cient
    uv run src/main.py pr python src/main.py
@@ -262,6 +288,7 @@ tests/
 ## 🎯 Usage
 
 ### Interactive Commands
+
 - `/tools` - List all available tools across servers
 - `/prompts` - View available prompts
 - `/prompt:<name>/<args>` - Execute a prompt with arguments
@@ -274,6 +301,7 @@ tests/
 - `/mode:chat` - Switch back to interactive chat mode
 
 ### Memory and Chat History
+
 ```bash
 # Enable Redis memory persistence
 /memory
@@ -289,6 +317,7 @@ Memory persistence is now DISABLED
 ```
 
 ### Operation Modes
+
 ```bash
 # Switch to autonomous mode
 /mode:auto
@@ -304,21 +333,23 @@ Now operating in CHAT mode. I will ask for approval before executing tasks.
 ```
 
 ### Mode Differences
+
 - **Chat Mode (Default)**
+
   - Requires explicit approval for tool execution
   - Interactive conversation style
   - Step-by-step task execution
   - Detailed explanations of actions
-
 - **Autonomous Mode**
+
   - Independent task execution
   - Self-guided decision making
   - Automatic tool selection and chaining
   - Progress updates and final results
   - Complex task decomposition
   - Error handling and recovery
-
 - **Orchestrator Mode**
+
   - Advanced planning for complex multi-step tasks
   - Strategic delegation across multiple MCP servers
   - Intelligent agent coordination and communication
@@ -329,6 +360,7 @@ Now operating in CHAT mode. I will ask for approval before executing tasks.
   - Adaptive task prioritization
 
 ### Prompt Management
+
 ```bash
 # List all available prompts
 /prompts
@@ -358,6 +390,7 @@ Now operating in CHAT mode. I will ask for approval before executing tasks.
 ```
 
 ### Advanced Prompt Features
+
 - **Argument Validation**: Automatic type checking and validation
 - **Default Values**: Smart handling of optional arguments
 - **Context Awareness**: Prompts can access previous conversation context
@@ -366,7 +399,9 @@ Now operating in CHAT mode. I will ask for approval before executing tasks.
 - **Dynamic Help**: Detailed usage information for each prompt
 
 ### AI-Powered Interactions
+
 The client intelligently:
+
 - Chains multiple tools together
 - Provides context-aware responses
 - Automatically selects appropriate tools
@@ -374,6 +409,7 @@ The client intelligently:
 - Maintains conversation context
 
 ### Model Support
+
 - **OpenAI Models**
   - Full support for all OpenAI models
   - Native function calling for compatible models
@@ -394,6 +430,7 @@ The client intelligently:
 ## 🔧 Advanced Features
 
 ### Tool Orchestration
+
 ```python
 # Example of automatic tool chaining if the tool is available in the servers connected
 User: "Find charging stations near Silicon Valley and check their current status"
@@ -406,6 +443,7 @@ User: "Find charging stations near Silicon Valley and check their current status
 ```
 
 ### Resource Analysis
+
 ```python
 # Automatic resource processing
 User: "Analyze the contents of /path/to/document.pdf"
@@ -416,7 +454,9 @@ User: "Analyze the contents of /path/to/document.pdf"
 3. Processes through LLM
 4. Provides intelligent summary
 ```
+
 ### Demo
+
 ![mcp_client_new1-MadewithClipchamp-ezgif com-optimize](https://github.com/user-attachments/assets/9c4eb3df-d0d5-464c-8815-8f7415a47fce)
 
 ## 🔍 Troubleshooting
@@ -424,34 +464,39 @@ User: "Analyze the contents of /path/to/document.pdf"
 ### Common Issues and Solutions
 
 1. **Connection Issues**
+
    ```bash
    Error: Could not connect to MCP server
    ```
+
    - Check if the server is running
    - Verify server configuration in `servers_config.json`
    - Ensure network connectivity
    - Check server logs for errors
-
 2. **API Key Issues**
+
    ```bash
    Error: Invalid API key
    ```
+
    - Verify API key is correctly set in `.env`
    - Check if API key has required permissions
    - Ensure API key is for correct environment (production/development)
-
 3. **Redis Connection**
+
    ```bash
    Error: Could not connect to Redis
    ```
+
    - Verify Redis server is running
    - Check Redis connection settings in `.env`
    - Ensure Redis password is correct (if configured)
-
 4. **Tool Execution Failures**
+
    ```bash
    Error: Tool execution failed
    ```
+
    - Check tool availability on connected servers
    - Verify tool permissions
    - Review tool arguments for correctness
@@ -459,11 +504,13 @@ User: "Analyze the contents of /path/to/document.pdf"
 ### Debug Mode
 
 Enable debug mode for detailed logging:
+
 ```bash
 /debug
 ```
 
 For additional support, please:
+
 1. Check the [Issues](https://github.com/Abiorh001/mcp_omni_connect/issues) page
 2. Review closed issues for similar problems
 3. Open a new issue with detailed information if needed

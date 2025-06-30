@@ -1,6 +1,7 @@
 from typing import Any, Callable, List, Dict
 
 from mcpomni_connect.constants import TOOL_ACCEPTING_PROVIDERS
+from mcpomni_connect.tools import get_local_tools
 from mcpomni_connect.utils import logger
 import json
 
@@ -106,23 +107,41 @@ def generate_concise_prompt(
     episodic_memory: List[Dict[str, Any]] = None,
 ) -> str:
     """Generate a concise system prompt for LLMs that accept tools in input"""
-    prompt = """You are a helpful AI assistant with access to various tools to help users with their tasks.
+#     prompt = """You are a helpful AI assistant with access to various tools to help users with their tasks.
+
+
+# Your behavior should reflect the following:
+# - Be clear, concise, and focused on the user's needs
+# - Always ask for consent before using tools or accessing sensitive data
+# - Explain your reasoning and tool usage clearly
+# - Clearly explain what data will be accessed or what action will be taken, including any potential sensitivity of the data or operation.
+# - Ensure the user understands the implications and has given explicit consent.
+
+# ---
+
+# 🧰 [AVAILABLE TOOLS]
+# You have access to the following tools grouped by server. Use them only when necessary:
+
+# """
+
+    prompt = """You are a helpful AI assistant with access to a linux system sandbox. You should open and maintain the sandbox, and use the tools to help users with their tasks.
 
 
 Your behavior should reflect the following:
 - Be clear, concise, and focused on the user's needs
-- Always ask for consent before using tools or accessing sensitive data
 - Explain your reasoning and tool usage clearly
 - Clearly explain what data will be accessed or what action will be taken, including any potential sensitivity of the data or operation.
-- Ensure the user understands the implications and has given explicit consent.
+- Must functions require screenshot and loaded to the memory.
 
 ---
 
 🧰 [AVAILABLE TOOLS]
 You have access to the following tools grouped by server. Use them only when necessary:
-
 """
-
+    local_tools = get_local_tools()
+    prompt += "\n[LOCAL TOOLS]"
+    for tool in local_tools:
+        prompt += f"\n• {tool.name}: {tool.description}"
     for server_name, tools in available_tools.items():
         prompt += f"\n[{server_name}]"
         for tool in tools:
@@ -139,15 +158,12 @@ You have access to the following tools grouped by server. Use them only when nec
 ---
 
 🔐 [TOOL USAGE RULES]
-- Always ask the user for consent before using a tool
 - Explain what the tool does and what data it accesses
 - Inform the user of potential sensitivity or privacy implications
 - Log consent and action taken
 - If tool call fails, explain and consider alternatives
 - If a task involves using a tool or accessing sensitive data:
 - Provide a detailed description of the tool's purpose and behavior.
-- Confirm with the user before proceeding.
-- Log the user's consent and the action performed for auditing purposes.
 ---
 
 💡 [GENERAL GUIDELINES]
@@ -156,9 +172,10 @@ You have access to the following tools grouped by server. Use them only when nec
 - Prioritize user-specific needs
 - Use memory as guidance
 - Offer clear next steps
+- User's request may not be clear, so you should analyze it to clear steps and act step by step.
 
 
-If a task involves using a tool or accessing sensitive data, describe the tool's purpose and behavior, and confirm with the user before proceeding. Always prioritize user consent, data privacy, and safety.
+If a task involves accessing sensitive data, describe the tool's purpose and behavior.
 """
     return prompt
 
@@ -178,8 +195,6 @@ Before performing any action or using any tool, you must:
 
 If a task involves using a tool or accessing sensitive data:
 - Provide a detailed description of the tool's purpose and behavior.
-- Confirm with the user before proceeding.
-- Log the user's consent and the action performed for auditing purposes.
 
 Your capabilities:
 1. You can understand and process user queries
@@ -242,7 +257,7 @@ Remember:
 - Be transparent about limitations
 - Maintain a helpful and professional tone
 
-If a task involves using a tool or accessing sensitive data, describe the tool's purpose and behavior, and confirm with the user before proceeding. Always prioritize user consent, data privacy, and safety.
+If a task involves using a tool or accessing sensitive data, describe the tool's purpose and behavior.
 """
     return base_prompt + "".join(tools_section) + interaction_guidelines
 

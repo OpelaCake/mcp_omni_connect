@@ -68,7 +68,7 @@ class MCPClient:
         self.exit_stack = AsyncExitStack()
         self.llm_connection = LLMConnection(self.config)
         self.sampling_callback = samplingCallback()
-        self.available_tools["local"] = get_local_tools()
+        # self.available_tools["local"] = get_local_tools()
 
     async def connect_to_servers(self):
         """Connect to an MCP server"""

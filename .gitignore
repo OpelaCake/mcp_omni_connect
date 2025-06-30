@@ -13,3 +13,11 @@ servers_config.json
 *.log
 *.log.*
 ./qdrant_data/
+.venv
+.gradio
+.ipynb_checkpoints
+pyproject.toml
+*.png
+*.jpg
+*.jpeg
+*.gif

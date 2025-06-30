@@ -54,7 +54,7 @@ async def async_main():
     try:
         config_path = check_config_exists()
         config = Configuration()
-        client = MCPClient(config)
+        client = MCPClient(config, debug=True)
         llm_connection = LLMConnection(config)
         cli = MCPClientCLI(client, llm_connection)
 

@@ -303,7 +303,6 @@ class RedisShortTermMemory:
             "metadata": self._serialize(metadata),
             "timestamp": timestamp,
         }
-        # print(f"message: {message}")
         # Store as a JSON string in Redis
         await self._redis_client.zadd(key, {json.dumps(message): timestamp})
         await self._redis_client.set(

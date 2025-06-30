@@ -42,11 +42,12 @@ async def list_tools(
     for server_name in server_names:
         if sessions[server_name]["connected"]:
             try:
+                print(f"server_name: {server_name}")
                 tools_response = await sessions[server_name][
                     "session"
                 ].list_tools()
                 tools.extend(tools_response.tools)
-                # print(f"tools: {tools}")
+                print(f"tools: {tools}")
             except Exception as e:
                 logger.info(f"{server_name} Does not support tools")
     # Add local tools

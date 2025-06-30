@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional
 from mcpomni_connect.utils import logger
 from mcpomni_connect.tools import get_local_tools
 
+from mcp.types import ImageContent
 
 # process a query using LLM and available tools using tool calling agent
 async def tool_calling_agent(
@@ -25,7 +26,7 @@ async def tool_calling_agent(
 
     # add system prompt and user query to messages
     messages.append({"role": "system", "content": system_prompt})
-
+    print(f"system_prompt: {system_prompt}")
     # track assistant with tool calls and pending tool responses
     assistant_with_tool_calls = None
     pending_tool_responses = []
@@ -34,6 +35,7 @@ async def tool_calling_agent(
     short_term_memory_message_history = await message_history()
     # process message history in order
     for _, message in enumerate(short_term_memory_message_history):
+        print(f"message: {str(message)[:300]}")
         if message["role"] == "user":
             # First flush any pending tool responses if needed
             if assistant_with_tool_calls and pending_tool_responses:
@@ -82,7 +84,7 @@ async def tool_calling_agent(
             if assistant_with_tool_calls:
                 pending_tool_responses.append(
                     {
-                        "role": "tool",
+                        "role": "user",
                         "content": message["content"],
                         "tool_call_id": message["metadata"]["tool_call_id"],
                     }
@@ -260,7 +262,7 @@ async def tool_calling_agent(
                     raise Exception(
                         f"Tool {tool_name} not found in any server"
                     )
-
+                print(f"tool_content: {str(tool_content)[:200]}")
                 # Handle the result content appropriately
                 if (
                     hasattr(tool_content, "__getitem__")
@@ -268,44 +270,67 @@ async def tool_calling_agent(
                     and hasattr(tool_content[0], "text")
                 ):
                     tool_content = tool_content[0].text
-                
-                tool_results.append(
-                    {"call": tool_name, "result": tool_content}
-                )
+                if isinstance(tool_content[0], ImageContent):
+                    # 将图片数据放在metadata中，而不是content中，以匹配llm.py的期望格式
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": "截图已获取，元素ID标注于图中",  # 提供文本描述
+                            "metadata": {
+                                "image_url": f"data:image/{tool_content[0].mimeType.split('/')[-1]};base64,{tool_content[0].data}"
+                            },
+                            "tool_call_id": tool_call.id,
+                        }
+                    )
+                    # add message to history
+                    await add_message_to_history(
+                        role="tool",
+                        content="截图已获取，元素ID标注于图中",
+                        metadata={
+                            "image_url": f"data:image/{tool_content[0].mimeType.split('/')[-1]};base64,{tool_content[0].data}"
+                        },
+                    )
+                    tool_results.append(
+                        {"call": tool_name, "result": "screenshot image got, loaded to history"}
+                    )
+                else:
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": str(tool_content),  # Ensure content is a string
+                            "tool_call_id": tool_call.id,
+                        }
+                    )
+                    tool_results.append(
+                        {"call": tool_name, "result": tool_content}
+                    )
+                    
+                    # add message to history
+                    await add_message_to_history(
+                        role="tool",
+                        content=str(tool_content),
+                        metadata={
+                            "tool_call_id": tool_call.id,
+                            "tool": tool_name,
+                            "args": tool_args,
+                        },
+                    )
+                    final_text.append(f"\n[Tool {tool_name} returned: {str(tool_content)[:200]}]")
                 if debug:
                     result_preview = (
-                        tool_content[:200] + "..."
+                        (str(tool_content)[:200] + "...")
                         if len(str(tool_content)) > 200
                         else str(tool_content)
                     )
                     logger.info(f"Tool result preview: {result_preview}")
 
-                # add the tool result to the messages
-                messages.append(
-                    {
-                        "role": "tool",
-                        "content": str(tool_content),  # Ensure content is a string
-                        "tool_call_id": tool_call.id,
-                    }
-                )
-                # add message to history
-                await add_message_to_history(
-                    role="tool",
-                    content=str(tool_content),
-                    metadata={
-                        "tool_call_id": tool_call.id,
-                        "tool": tool_name,
-                        "args": tool_args,
-                    },
-                )
-                final_text.append(f"\n[Tool {tool_name} returned: {tool_content}]")
             except Exception as e:
                 error_message = f"Error executing tool call {tool_name}: {e}"
                 logger.error(error_message)
                 # append the message regardless of error
                 messages.append(
                     {
-                        "role": "tool",
+                        "role": "user",
                         "content": error_message,
                         "tool_call_id": tool_call.id,
                     }

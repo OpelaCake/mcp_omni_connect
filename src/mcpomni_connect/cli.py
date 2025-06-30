@@ -354,8 +354,8 @@ class MCPClientCLI:
         """Handle memory command"""
         self.USE_MEMORY["redis"] = not self.USE_MEMORY["redis"]
         self.console.print(
-            f"[{'green' if self.USE_MEMORY["redis"] else 'red'}]Redis memory "
-            f"{'enabled' if self.USE_MEMORY["redis"] else 'disabled'}[/]"
+            f"[{'green' if self.USE_MEMORY['redis'] else 'red'}]Redis memory "
+            f"{'enabled' if self.USE_MEMORY['redis'] else 'disabled'}[/]"
         )
 
     async def handle_mode_command(self, mode: str) -> str:
@@ -836,7 +836,6 @@ class MCPClientCLI:
                     server_names=self.client.server_names,
                     sessions=self.client.sessions,
                 )
-
                 # Check if current LLM supports tools
                 supported_tools = LLMToolSupport.check_tool_support(
                     self.llm_connection.llm_config
@@ -855,7 +854,6 @@ class MCPClientCLI:
                         llm_connection=self.llm_connection,
                         # episodic_memory=episodic_query,
                     )
-
                     response = await tool_calling_agent(
                         query=query,
                         system_prompt=system_prompt,
@@ -955,7 +953,8 @@ class MCPClientCLI:
         except Exception as e:
             logger.error(f"Error processing query: {e}")
             self.console.print(f"[red]Error:[/] {str(e)}", style="bold red")
-
+        
+        return response
     async def handle_history_command(self, input_text: str = ""):
         """Handle history command"""
         prompts_table = Table(title="Message History", box=box.ROUNDED)
